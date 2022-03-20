@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/gbataille/zap_log_prettier/consolefmt"
@@ -40,7 +42,62 @@ func fromJsonGeneric(in []byte) (map[string]any, error) {
 }
 
 func toHumanLog(logLine map[string]any) {
-	methodFromLine(logLine)(logLine)
+	logFunc := methodFromLine(logLine)
+	logMsg, ok := extract(logLine, "msg")
+
+	if !ok {
+		logFunc(fmt.Sprintf("%v", logLine))
+		return
+	}
+
+	logTs, _ := extract(logLine, "ts")
+	logFunc(fmt.Sprintf("[%s]", logTs), logMsg)
+
+	caller, _ := extract(logLine, "caller")
+	leveledList := pterm.LeveledList{
+		pterm.LeveledListItem{Level: 0, Text: caller},
+	}
+	root := pterm.NewTreeFromLeveledList(leveledList)
+	tree, _ := pterm.DefaultTree.WithRoot(root).Srender()
+	pterm.Print(tree)
+
+	keys := make([]string, 0, len(logLine))
+	for k := range logLine {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	kv := make([][]string, 0, len(logLine))
+	for _, k := range keys {
+		kv = append(kv, []string{fmt.Sprintf("\t\t%s", k), asString(logLine[k])})
+	}
+
+	pterm.DefaultTable.WithData(pterm.TableData(kv)).Render()
+
+	pterm.Println()
+}
+
+func asString(raw any) string {
+	var value string
+	switch raw.(type) {
+	case string:
+		value = raw.(string)
+	case fmt.Stringer:
+		value = raw.(fmt.Stringer).String()
+	default:
+		value = fmt.Sprintf("%v", raw)
+
+	}
+	return value
+}
+
+func extract(logLine map[string]any, key string) (string, bool) {
+	valueRaw, ok := logLine[key]
+	if ok {
+		delete(logLine, key)
+	}
+	value := asString(valueRaw)
+	return value, ok
 }
 
 func methodFromLine(logLine map[string]any) func(a ...any) {
@@ -54,6 +111,7 @@ func methodFromLine(logLine map[string]any) func(a ...any) {
 	if !ok {
 		return pterm.Println
 	}
+	delete(logLine, "level")
 
 	return methodFromLevel(level)
 }
@@ -79,6 +137,6 @@ func methodFromLevel(level string) func(a ...any) {
 
 func withNoReturn(f func(a ...any) *pterm.TextPrinter) func(a ...any) {
 	return func(a ...any) {
-		f(a)
+		f(a...)
 	}
 }
