@@ -54,6 +54,7 @@ func toHumanLog(logLine map[string]any) {
 	logFunc(fmt.Sprintf("[%s]", logTs), logMsg)
 
 	caller, _ := extract(logLine, "caller")
+	caller = pterm.ThemeDefault.DescriptionMessageStyle.Sprint(caller)
 	leveledList := pterm.LeveledList{
 		pterm.LeveledListItem{Level: 0, Text: caller},
 	}
@@ -67,14 +68,27 @@ func toHumanLog(logLine map[string]any) {
 	}
 	sort.Strings(keys)
 
-	kv := make([][]string, 0, len(logLine))
-	for _, k := range keys {
-		kv = append(kv, []string{fmt.Sprintf("\t\t%s", k), asString(logLine[k])})
+	nbPanel := 3
+	tables := make([][][]string, 0, nbPanel)
+	for i := 0; i < nbPanel; i++ {
+		tables = append(tables, make([][]string, 0, len(logLine)/nbPanel))
 	}
 
-	pterm.DefaultTable.WithData(pterm.TableData(kv)).Render()
+	for idx, k := range keys {
+		item := []string{
+			pterm.ThemeDefault.DebugMessageStyle.Sprintf("\t\t%s", k),
+			pterm.ThemeDefault.DebugMessageStyle.Sprint(asString(logLine[k])),
+		}
+		tables[idx%nbPanel] = append(tables[idx%nbPanel], item)
+	}
 
-	pterm.Println()
+	panels := make([]pterm.Panel, 0, nbPanel)
+	for _, table := range tables {
+		data, _ := pterm.DefaultTable.WithData(pterm.TableData(table)).Srender()
+		panels = append(panels, pterm.Panel{Data: data})
+	}
+	ps := pterm.Panels{panels}
+	pterm.DefaultPanel.WithPanels(ps).WithPadding(5).Render()
 }
 
 func asString(raw any) string {
