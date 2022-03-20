@@ -3,10 +3,10 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 
+	"github.com/gbataille/zap_log_prettier/consolefmt"
 	"github.com/pterm/pterm"
 )
 
@@ -23,9 +23,10 @@ func handleSTDIN() {
 		lineB := input.Bytes()
 		logLine, err := fromJsonGeneric(lineB)
 		if err != nil {
-			fmt.Println(string(lineB))
+			pterm.Debug.Println(string(lineB))
+		} else {
+			toHumanLog(logLine)
 		}
-		toHumanLog(logLine)
 	}
 }
 
@@ -60,15 +61,17 @@ func methodFromLine(logLine map[string]any) func(a ...any) {
 func methodFromLevel(level string) func(a ...any) {
 	switch strings.ToUpper(level) {
 	case "ERROR":
-		return withNoReturn(pterm.Error.Println)
+		return withNoReturn(consolefmt.Error.Println)
 	case "INFO":
-		return withNoReturn(pterm.Info.Println)
+		return withNoReturn(consolefmt.Info.Println)
 	case "FATAL":
-		return withNoReturn(pterm.Info.Println)
+		return withNoReturn(consolefmt.Fatal.Println)
 	case "DEBUG":
-		return withNoReturn(pterm.Debug.Println)
+		return withNoReturn(consolefmt.Debug.Println)
 	case "WARNING":
-		return withNoReturn(pterm.Debug.Println)
+		return withNoReturn(consolefmt.Warning.Println)
+	case "WARN":
+		return withNoReturn(consolefmt.Warning.Println)
 	default:
 		return pterm.Println
 	}
