@@ -32,8 +32,8 @@ func handleSTDIN() {
 	}
 }
 
-func fromJsonGeneric(in []byte) (map[string]any, error) {
-	jsonMap := make(map[string](any))
+func fromJsonGeneric(in []byte) (map[string]interface{}, error) {
+	jsonMap := make(map[string](interface{}))
 	err := json.Unmarshal(in, &jsonMap)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func fromJsonGeneric(in []byte) (map[string]any, error) {
 	return jsonMap, nil
 }
 
-func toHumanLog(logLine map[string]any) {
+func toHumanLog(logLine map[string]interface{}) {
 	logFunc := methodFromLine(logLine)
 	logMsg, ok := extract(logLine, "msg")
 
@@ -91,7 +91,7 @@ func toHumanLog(logLine map[string]any) {
 	pterm.DefaultPanel.WithPanels(ps).WithPadding(5).Render()
 }
 
-func asString(raw any) string {
+func asString(raw interface{}) string {
 	var value string
 	switch raw.(type) {
 	case string:
@@ -105,7 +105,7 @@ func asString(raw any) string {
 	return value
 }
 
-func extract(logLine map[string]any, key string) (string, bool) {
+func extract(logLine map[string]interface{}, key string) (string, bool) {
 	valueRaw, ok := logLine[key]
 	if ok {
 		delete(logLine, key)
@@ -114,7 +114,7 @@ func extract(logLine map[string]any, key string) (string, bool) {
 	return value, ok
 }
 
-func methodFromLine(logLine map[string]any) func(a ...any) {
+func methodFromLine(logLine map[string]interface{}) func(a ...interface{}) {
 	levelRaw, ok := logLine["level"]
 
 	if !ok {
@@ -130,7 +130,7 @@ func methodFromLine(logLine map[string]any) func(a ...any) {
 	return methodFromLevel(level)
 }
 
-func methodFromLevel(level string) func(a ...any) {
+func methodFromLevel(level string) func(a ...interface{}) {
 	switch strings.ToUpper(level) {
 	case "ERROR":
 		return withNoReturn(consolefmt.Error.Println)
@@ -149,8 +149,8 @@ func methodFromLevel(level string) func(a ...any) {
 	}
 }
 
-func withNoReturn(f func(a ...any) *pterm.TextPrinter) func(a ...any) {
-	return func(a ...any) {
+func withNoReturn(f func(a ...interface{}) *pterm.TextPrinter) func(a ...interface{}) {
+	return func(a ...interface{}) {
 		f(a...)
 	}
 }
