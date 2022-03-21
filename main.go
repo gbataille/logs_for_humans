@@ -62,6 +62,15 @@ func toHumanLog(logLine map[string]interface{}) {
 	tree, _ := pterm.DefaultTree.WithRoot(root).Srender()
 	pterm.Print(tree)
 
+	rawKeys := []string{"panic_stack_trace"}
+	rawOut := make([]string, 0, len(rawKeys))
+	for _, key := range rawKeys {
+		out, ok := extract(logLine, key)
+		if ok {
+			rawOut = append(rawOut, out)
+		}
+	}
+
 	keys := make([]string, 0, len(logLine))
 	for k := range logLine {
 		keys = append(keys, k)
@@ -89,6 +98,12 @@ func toHumanLog(logLine map[string]interface{}) {
 	}
 	ps := pterm.Panels{panels}
 	pterm.DefaultPanel.WithPanels(ps).WithPadding(5).Render()
+
+	for _, out := range rawOut {
+		out = strings.ReplaceAll(out, "\n", "\n        ")
+		out = "        " + out
+		pterm.ThemeDefault.DebugMessageStyle.Println(out)
+	}
 }
 
 func asString(raw interface{}) string {
