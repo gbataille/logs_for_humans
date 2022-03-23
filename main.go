@@ -62,7 +62,7 @@ func toHumanLog(logLine map[string]interface{}) {
 	tree, _ := pterm.DefaultTree.WithRoot(root).Srender()
 	pterm.Print(tree)
 
-	rawKeys := []string{"panic_stack_trace"}
+	rawKeys := []string{"panic_stack_trace", "error", "errorVerbose"}
 	rawOut := make([]string, 0, len(rawKeys))
 	for _, key := range rawKeys {
 		out, ok := extract(logLine, key)
