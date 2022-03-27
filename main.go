@@ -12,6 +12,8 @@ import (
 	"github.com/pterm/pterm"
 )
 
+const maxPanelWidth int = 50
+
 func main() {
 	handleSTDIN()
 }
@@ -50,6 +52,12 @@ func toHumanLog(logLine map[string]interface{}) {
 		return
 	}
 
+	width, _, err := pterm.GetTerminalSize()
+	if err != nil {
+		logFunc(fmt.Sprintf("%v", logLine))
+		return
+	}
+
 	logTs, _ := extract(logLine, "ts")
 	logFunc(fmt.Sprintf("[%s]", logTs), logMsg)
 
@@ -62,36 +70,45 @@ func toHumanLog(logLine map[string]interface{}) {
 	tree, _ := pterm.DefaultTree.WithRoot(root).Srender()
 	pterm.Print(tree)
 
-	rawKeys := []string{"panic_stack_trace", "error", "errorVerbose"}
-	rawOut := make([]string, 0, len(rawKeys))
-	for _, key := range rawKeys {
-		out, ok := extract(logLine, key)
-		if ok {
-			rawOut = append(rawOut, out)
-		}
-	}
-
+	var maxKeySize int
 	keys := make([]string, 0, len(logLine))
 	for k := range logLine {
 		keys = append(keys, k)
+		if len(k) > maxKeySize {
+			maxKeySize = len(k)
+		}
 	}
 	sort.Strings(keys)
 
-	nbPanel := 3
-	tables := make([][][]string, 0, nbPanel)
-	for i := 0; i < nbPanel; i++ {
-		tables = append(tables, make([][]string, 0, len(logLine)/nbPanel))
+	// tables uses 3 chars as a separator
+	// Plus we indent it with 4 spaces at the start
+	// We have room for nbTables tables, with a width of maxPanelWidth
+	nbTables := int((width - 4) / (maxPanelWidth + 3))
+	actualTableWidth := int((width - 4) / nbTables)
+
+	maxValueSpace := actualTableWidth - 3 - maxKeySize
+
+	tables := make([][][]string, 0, nbTables)
+	for i := 0; i < nbTables; i++ {
+		tables = append(tables, make([][]string, 0, len(logLine)/nbTables))
 	}
+
+	rawOut := make(map[string]string)
 
 	for idx, k := range keys {
-		item := []string{
-			pterm.ThemeDefault.DebugMessageStyle.Sprintf("\t\t%s", k),
-			pterm.ThemeDefault.DebugMessageStyle.Sprint(asString(logLine[k])),
+		v := asString(logLine[k])
+		if len(v) > maxValueSpace {
+			rawOut[k] = v
+		} else {
+			item := []string{
+				pterm.ThemeDefault.DebugMessageStyle.Sprintf("    %s", k),
+				pterm.ThemeDefault.DebugMessageStyle.Sprint(asString(v)),
+			}
+			tables[idx%nbTables] = append(tables[idx%nbTables], item)
 		}
-		tables[idx%nbPanel] = append(tables[idx%nbPanel], item)
 	}
 
-	panels := make([]pterm.Panel, 0, nbPanel)
+	panels := make([]pterm.Panel, 0, nbTables)
 	for _, table := range tables {
 		data, _ := pterm.DefaultTable.WithData(pterm.TableData(table)).Srender()
 		panels = append(panels, pterm.Panel{Data: data})
@@ -99,10 +116,12 @@ func toHumanLog(logLine map[string]interface{}) {
 	ps := pterm.Panels{panels}
 	pterm.DefaultPanel.WithPanels(ps).WithPadding(5).Render()
 
-	for _, out := range rawOut {
-		out = strings.ReplaceAll(out, "\n", "\n        ")
-		out = "        " + out
-		pterm.ThemeDefault.DebugMessageStyle.Println(out)
+	for k, v := range rawOut {
+		k = "    " + k + " :"
+		pterm.ThemeDefault.DebugMessageStyle.Println(k)
+		v = strings.ReplaceAll(v, "\n", "\n        ")
+		v = "        " + v
+		pterm.ThemeDefault.DebugMessageStyle.Println(v)
 	}
 }
 
