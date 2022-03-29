@@ -2,7 +2,7 @@ package consolefmt
 
 import "github.com/pterm/pterm"
 
-// Redefines the printer for the prefix to have all the same length, for alignment purpose
+// Redefines the printer for the prefix to all have the same length, for alignment purpose
 var Info, Warning, Success, Error, Fatal, Debug pterm.PrefixPrinter
 
 func init() {
@@ -33,7 +33,7 @@ func init() {
 	}
 
 	// Fatal returns a PrefixPrinter, which can be used to print text with an "fatal" Prefix.
-	// NOTICE: Fatal terminates the application immediately!
+	// NOTICE: Fatal terminates the application immediately! I remove the fatal: true flag from the common definition
 	Fatal = pterm.PrefixPrinter{
 		MessageStyle: &pterm.ThemeDefault.FatalMessageStyle,
 		Prefix: pterm.Prefix{

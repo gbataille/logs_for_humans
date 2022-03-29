@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,8 +12,15 @@ import (
 )
 
 const maxPanelWidth int = 50
+const newLine byte = 10 // []byte("\n")[0]
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%v\n", r)
+		}
+	}()
+
 	handleSTDIN()
 }
 
@@ -22,16 +28,35 @@ func handleSTDIN() {
 	// Enable debug messages.
 	pterm.EnableDebugMessages()
 
-	input := bufio.NewScanner(os.Stdin)
-	for input.Scan() {
-		lineB := input.Bytes()
-		logLine, err := fromJsonGeneric(lineB)
-		if err != nil {
-			pterm.Debug.Println(string(lineB))
-		} else {
-			toHumanLog(logLine)
+	// It is critical to parse small chunks, because linux PIPE have a max buffer size
+	// We quickly consume one character at a time to empty the input buffer and transfer it to a memory buffer
+	buf := make([]byte, 4096)
+	nextLine := make([]byte, 0, 2^16)
+
+	n, err := os.Stdin.Read(buf)
+	for err == nil {
+		for _, char := range buf[:n-1] {
+			if char == newLine {
+				handleLine(nextLine)
+				nextLine = make([]byte, 0, 2^16)
+			} else {
+				nextLine = append(nextLine, char)
+			}
 		}
+
+		n, err = os.Stdin.Read(buf)
 	}
+	handleLine(nextLine)
+}
+
+func handleLine(lineB []byte) {
+	logLine, err := fromJsonGeneric(lineB)
+	if err != nil {
+		pterm.Debug.Println(string(lineB))
+		return
+	}
+
+	toHumanLog(logLine)
 }
 
 func fromJsonGeneric(in []byte) (map[string]interface{}, error) {
@@ -40,6 +65,7 @@ func fromJsonGeneric(in []byte) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return jsonMap, nil
 }
 
@@ -114,7 +140,10 @@ func toHumanLog(logLine map[string]interface{}) {
 		panels = append(panels, pterm.Panel{Data: data})
 	}
 	ps := pterm.Panels{panels}
-	pterm.DefaultPanel.WithPanels(ps).WithPadding(5).Render()
+	err = pterm.DefaultPanel.WithPanels(ps).WithPadding(5).Render()
+	if err != nil {
+		fmt.Println("ERROR ########")
+	}
 
 	for k, v := range rawOut {
 		k = "    " + k + " :"
@@ -127,15 +156,16 @@ func toHumanLog(logLine map[string]interface{}) {
 
 func asString(raw interface{}) string {
 	var value string
-	switch raw.(type) {
+	switch raw := raw.(type) {
 	case string:
-		value = raw.(string)
+		value = raw
 	case fmt.Stringer:
-		value = raw.(fmt.Stringer).String()
+		value = raw.String()
 	default:
 		value = fmt.Sprintf("%v", raw)
 
 	}
+
 	return value
 }
 
