@@ -35,7 +35,7 @@ func handleSTDIN() {
 
 	n, err := os.Stdin.Read(buf)
 	for err == nil {
-		for _, char := range buf[:n-1] {
+		for _, char := range buf[:n] {
 			if char == newLine {
 				handleLine(nextLine)
 				nextLine = make([]byte, 0, 2^16)
@@ -44,12 +44,22 @@ func handleSTDIN() {
 			}
 		}
 
+		// If we read a non-full buffer, it means that we reached  the end of a "line"
+		if n < cap(buf) {
+			handleLine(nextLine)
+			nextLine = make([]byte, 0, 2^16)
+		}
+
 		n, err = os.Stdin.Read(buf)
 	}
 	handleLine(nextLine)
 }
 
 func handleLine(lineB []byte) {
+	if len(lineB) == 0 {
+		return
+	}
+
 	logLine, err := fromJsonGeneric(lineB)
 	if err != nil {
 		pterm.Debug.Println(string(lineB))
