@@ -1,6 +1,10 @@
 package consolefmt
 
-import "github.com/pterm/pterm"
+import (
+	"strings"
+
+	"github.com/pterm/pterm"
+)
 
 // Redefines the printer for the prefix to all have the same length, for alignment purpose
 var Info, Warning, Success, Error, Fatal, Debug pterm.PrefixPrinter
@@ -51,5 +55,54 @@ func init() {
 			Style: &pterm.ThemeDefault.DebugPrefixStyle,
 		},
 		Debugger: true,
+	}
+}
+
+func PrintWithLevel(level string, a ...interface{}) {
+	switch strings.ToUpper(level) {
+	case "ERROR":
+		Error.Print(a)
+	case "INFO":
+		Info.Print(a)
+	case "FATAL":
+		Fatal.Print(a)
+	case "DEBUG":
+		Debug.Print(a)
+	case "WARNING":
+		Warning.Print(a)
+	case "WARN":
+		Warning.Print(a)
+	default:
+		pterm.ThemeDefault.PrimaryStyle.Print(a)
+	}
+}
+
+func PrintlnWithLevel(level string, a ...interface{}) {
+	PrintWithLevel(level, a)
+	PrintWithLevel("\n")
+}
+
+func MethodFromLevel(level string) func(a ...interface{}) {
+	switch strings.ToUpper(level) {
+	case "ERROR":
+		return withNoReturn(Error.Println)
+	case "INFO":
+		return withNoReturn(Info.Println)
+	case "FATAL":
+		return withNoReturn(Fatal.Println)
+	case "DEBUG":
+		return withNoReturn(Debug.Println)
+	case "WARNING":
+		return withNoReturn(Warning.Println)
+	case "WARN":
+		return withNoReturn(Warning.Println)
+	default:
+		return pterm.ThemeDefault.PrimaryStyle.Println
+	}
+}
+
+func withNoReturn(f func(a ...interface{}) *pterm.TextPrinter) func(a ...interface{}) {
+	return func(a ...interface{}) {
+		f(a...)
 	}
 }

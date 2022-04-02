@@ -1,0 +1,1 @@
+{"level":"info","ts":"2022-03-20T09:25:38.724+0100","caller":"/Users/foobar/Documents/Prog/app1/internal/cmd/start.go:57","msg":"component starting","category":"technical","cmp_name":"app1","cmp_id":"fb25729c-aa01-44f4-b45a-5d3a7ecc855f","name":"app1","version":"","runtime_environment":"","id":"fb25729c-aa01-44f4-b45a-5d3a7ecc855f","git_commit":"","go_version":""}
