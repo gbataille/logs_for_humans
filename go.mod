@@ -1,4 +1,4 @@
-module github.com/gbataille/zap_log_prettier
+module github.com/gbataille/logs_for_humans
 
 go 1.17
 

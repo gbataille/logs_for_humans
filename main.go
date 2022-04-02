@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gbataille/zap_log_prettier/consolefmt"
+	"github.com/gbataille/logs_for_humans/consolefmt"
 	"github.com/pterm/pterm"
 )
 
