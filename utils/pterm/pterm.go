@@ -1,4 +1,4 @@
-package consolefmt
+package pterm
 
 import (
 	"strings"
