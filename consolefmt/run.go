@@ -1,6 +1,8 @@
 package consolefmt
 
 import (
+	"sync"
+
 	"github.com/gbataille/logs_for_humans/consolefmt/json"
 	"github.com/gbataille/logs_for_humans/consolefmt/raw"
 	"github.com/gbataille/logs_for_humans/in_stream"
@@ -8,9 +10,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-type Handler struct{}
-
-func (h *Handler) HandleLine(lineB []byte) {
+func handleLine(lineB []byte) {
 	if len(lineB) == 0 {
 		return
 	}
@@ -23,11 +23,29 @@ func (h *Handler) HandleLine(lineB []byte) {
 	}
 }
 
-func (h *Handler) HandleError(err error) {
+func handleError(err error) {
 	pterm.ThemeDefault.ErrorMessageStyle.Println(err.Error())
 }
 
 func Run() {
-	handler := &Handler{}
-	in_stream.HandleStdinByLine(handler)
+	lineChan, errorChan := in_stream.HandleStdinByLine()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		for line := range lineChan {
+			handleLine(line)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		for err := range errorChan {
+			handleError(err)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
