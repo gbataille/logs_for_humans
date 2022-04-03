@@ -95,6 +95,10 @@ func HandleJSONLogLine(logLine map[string]interface{}) {
 		v = "        " + v
 		pterm.ThemeDefault.DebugMessageStyle.Println(v)
 	}
+
+	if len(rawOut) > 0 {
+		fmt.Println()
+	}
 }
 
 func asString(raw interface{}) string {
