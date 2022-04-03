@@ -34,9 +34,25 @@ func HandleStdinByLine() (chan []byte, chan error) {
 			nextLine = make([]byte, 0, 2^16)
 		}
 
-		n, err := os.Stdin.Read(buf)
 		// Loop until STDIN closes
-		for err == nil {
+		for {
+			n, err := os.Stdin.Read(buf)
+
+			if err != nil {
+				// Handle the last data
+				lineChan <- nextLine
+
+				close(lineChan)
+				close(errorChan)
+
+				if err != io.EOF {
+					// As far as I know, this is not "possible"
+					panic(err.Error())
+				}
+
+				break
+			}
+
 			for _, char := range buf[:n] {
 				if char == newLine {
 					dumpAndReset()
@@ -49,21 +65,7 @@ func HandleStdinByLine() (chan []byte, chan error) {
 				errorChan <- errors.New("read buffer full without a newline, dumping")
 				dumpAndReset()
 			}
-
-			// Loop increment
-			n, err = os.Stdin.Read(buf)
 		}
-
-		if err != io.EOF {
-			// As far as I know, this is not "possible"
-			panic(err.Error())
-		} else {
-			// Handle the last line consumed
-			lineChan <- nextLine
-		}
-
-		close(lineChan)
-		close(errorChan)
 	}()
 
 	return lineChan, errorChan
