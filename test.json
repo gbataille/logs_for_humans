@@ -1,8 +1,0 @@
-{}
-{"foo": "bar"}
-{"int": 1, "float": 2.5, "bool": true, "string": "foobarbaz", "list": [1,2,3], "map": {"foo": "bar"}}
-{"msg": "important log message", "level": "debug", "ts": 1647760842, "block_number": 2, "src": "pkg/algo/client/client.go:125"}
-{"msg": "important log message", "level": "bad", "ts": 1647760842, "block_number": 2, "src": "pkg/algo/client/client.go:125"}
-{"msg": "important log message", "level": "INFO", "ts": 1647760842, "block_number": 2, "src": "pkg/algo/client/client.go:125"}
-{"msg": "important log message", "level": "Error", "ts": 1647760842, "block_number": 2, "src": "pkg/algo/client/client.go:125"}
-{"msg": "important log message", "level": 2, "ts": 1647760842, "block_number": 2, "src": "pkg/algo/client/client.go:125"}
