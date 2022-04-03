@@ -2,6 +2,7 @@ package json
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -103,6 +104,12 @@ func asString(raw interface{}) string {
 		value = raw
 	case fmt.Stringer:
 		value = raw.String()
+	case float64:
+		if math.Abs(math.Round(raw)-raw) < 0.000001 {
+			value = fmt.Sprintf("%0.0f", raw)
+		} else {
+			value = fmt.Sprintf("%g", raw)
+		}
 	default:
 		value = fmt.Sprintf("%v", raw)
 
