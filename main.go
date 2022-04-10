@@ -9,5 +9,6 @@ func main() {
 	// Enable debug messages.
 	pterm.EnableDebugMessages()
 
-	consolefmt.Run()
+	formatter := consolefmt.ConsoleFormatter{}
+	formatter.Run()
 }
